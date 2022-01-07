@@ -35,67 +35,67 @@ szFileName  db MAX_PATH dup(?)
 .const
 szDllEdit   db 'RichEd20.dll',0
 szClassEdit db 'RichEdit20A',0
-szFont      db 'ÂÆã‰Ωì',0
+szFont      db 'ÀŒÃÂ',0
 
 
 .code
 
 ;----------------
-;ÂàùÂßãÂåñÁ™óÂè£Á®ãÂ∫è
+;≥ı ºªØ¥∞ø⁄≥Ã–Ú
 ;----------------
 _init proc
-  local @stCf:CHARFORMAT
-  
-  invoke GetDlgItem,hWinMain,IDC_INFO
-  mov hWinEdit,eax
-  invoke LoadIcon,hInstance,ICO_MAIN
-  invoke SendMessage,hWinMain,WM_SETICON,ICON_BIG,eax       ;‰∏∫Á™óÂè£ËÆæÁΩÆÂõæÊ†á
-  invoke SendMessage,hWinEdit,EM_SETTEXTMODE,TM_PLAINTEXT,0 ;ËÆæÁΩÆÁºñËæëÊéß‰ª∂
-  invoke RtlZeroMemory,addr @stCf,sizeof @stCf
-  mov @stCf.cbSize,sizeof @stCf
-  mov @stCf.yHeight,9*20
-  mov @stCf.dwMask,CFM_FACE or CFM_SIZE or CFM_BOLD
-  invoke lstrcpy,addr @stCf.szFaceName,addr szFont
-  invoke SendMessage,hWinEdit,EM_SETCHARFORMAT,0,addr @stCf
-  invoke SendMessage,hWinEdit,EM_EXLIMITTEXT,0,-1
-  ret
+    local @stCf:CHARFORMAT
+
+    invoke GetDlgItem,hWinMain,IDC_INFO
+    mov hWinEdit,eax
+    invoke LoadIcon,hInstance,ICO_MAIN
+    invoke SendMessage,hWinMain,WM_SETICON,ICON_BIG,eax       ;Œ™¥∞ø⁄…Ë÷√Õº±Í
+    invoke SendMessage,hWinEdit,EM_SETTEXTMODE,TM_PLAINTEXT,0 ;…Ë÷√±‡º≠øÿº˛
+    invoke RtlZeroMemory,addr @stCf,sizeof @stCf
+    mov @stCf.cbSize,sizeof @stCf
+    mov @stCf.yHeight,9*20
+    mov @stCf.dwMask,CFM_FACE or CFM_SIZE or CFM_BOLD
+    invoke lstrcpy,addr @stCf.szFaceName,addr szFont
+    invoke SendMessage,hWinEdit,EM_SETCHARFORMAT,0,addr @stCf
+    invoke SendMessage,hWinEdit,EM_EXLIMITTEXT,0,-1
+    ret
 _init endp
 
 
 ;-------------------
-; Á™óÂè£Á®ãÂ∫è
+; ¥∞ø⁄≥Ã–Ú
 ;-------------------
 _ProcDlgMain proc uses ebx edi esi hWnd,wMsg,wParam,lParam
-  mov eax,wMsg
-  .if eax==WM_CLOSE
-    invoke EndDialog,hWnd,NULL
-  .elseif eax==WM_INITDIALOG  ;ÂàùÂßãÂåñ
-    push hWnd
-    pop hWinMain
-    call _init
-  .elseif eax==WM_COMMAND  ;ËèúÂçï
-    mov eax,wParam
-    .if eax==IDM_EXIT       ;ÈÄÄÂá∫
-      invoke EndDialog,hWnd,NULL 
-    .elseif eax==IDM_OPEN   ;ÊâìÂºÄÊñá‰ª∂
-    .elseif eax==IDM_1  
-    .elseif eax==IDM_2
-    .elseif eax==IDM_3
+    mov eax,wMsg
+    .if eax==WM_CLOSE
+        invoke EndDialog,hWnd,NULL
+    .elseif eax==WM_INITDIALOG  ;≥ı ºªØ
+        push hWnd
+        pop hWinMain
+        call _init
+    .elseif eax==WM_COMMAND  ;≤Àµ•
+        mov eax,wParam
+        .if eax==IDM_EXIT       ;ÕÀ≥ˆ
+            invoke EndDialog,hWnd,NULL 
+        .elseif eax==IDM_OPEN   ;¥Úø™Œƒº˛
+        .elseif eax==IDM_1  
+        .elseif eax==IDM_2
+        .elseif eax==IDM_3
+        .endif
+    .else
+        mov eax,FALSE
+        ret
     .endif
-  .else
-    mov eax,FALSE
+    mov eax,TRUE
     ret
-  .endif
-  mov eax,TRUE
-  ret
 _ProcDlgMain endp
 
 start:
-  invoke LoadLibrary,offset szDllEdit
-  mov hRichEdit,eax
-  invoke GetModuleHandle,NULL
-  mov hInstance,eax
-  invoke DialogBoxParam,hInstance,DLG_MAIN,NULL,offset _ProcDlgMain,NULL
-  invoke FreeLibrary,hRichEdit
-  invoke ExitProcess,NULL
-  end start
+    invoke LoadLibrary,offset szDllEdit
+    mov hRichEdit,eax
+    invoke GetModuleHandle,NULL
+    mov hInstance,eax
+    invoke DialogBoxParam,hInstance,DLG_MAIN,NULL,offset _ProcDlgMain,NULL
+    invoke FreeLibrary,hRichEdit
+    invoke ExitProcess,NULL
+    end start
