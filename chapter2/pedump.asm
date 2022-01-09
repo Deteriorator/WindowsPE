@@ -1,3 +1,7 @@
+; rc -r pedump.rc
+; ml -c -coff pedump.asm
+; link -subsystem:windows pedump.res pedump.obj
+
 .386
 .model flat,stdcall
 option casemap:none
@@ -149,161 +153,161 @@ _openFile proc
         .if eax
             invoke CreateFileMapping,@hFile,\  ;内存映射文件
                 NULL,PAGE_READONLY,0,0,NULL
-        .if eax
-            mov @hMapFile,eax
-            invoke MapViewOfFile,eax,FILE_MAP_READ,0,0,0
-        .if eax
-            mov lpMemory,eax              ;获得文件在内存的映象起始位置
-            assume fs:nothing
-            push ebp
-            push offset _ErrFormat
-            push offset _Handler
-            push fs:[0]
-            mov fs:[0],esp
+            .if eax
+                mov @hMapFile,eax
+                invoke MapViewOfFile,eax,FILE_MAP_READ,0,0,0
+                .if eax
+                    mov lpMemory,eax              ;获得文件在内存的映象起始位置
+                    assume fs:nothing
+                    push ebp
+                    push offset _ErrFormat
+                    push offset _Handler
+                    push fs:[0]
+                    mov fs:[0],esp
 
-            ;开始处理文件
+                    ;开始处理文件
 
-            ;缓冲区初始化
-            invoke RtlZeroMemory,addr @bufTemp1,10
-            invoke RtlZeroMemory,addr @bufTemp2,20
-            invoke RtlZeroMemory,addr lpServicesBuffer,100
-            invoke RtlZeroMemory,addr bufDisplay,50
+                    ;缓冲区初始化
+                    invoke RtlZeroMemory,addr @bufTemp1,10
+                    invoke RtlZeroMemory,addr @bufTemp2,20
+                    invoke RtlZeroMemory,addr lpServicesBuffer,100
+                    invoke RtlZeroMemory,addr bufDisplay,50
 
-            mov @dwCount,1
-            mov esi,lpMemory
-            mov edi,offset bufDisplay
- 
-            ; 将第一列写入lpServicesBuffer
-            mov @dwCount1,0
-            invoke wsprintf,addr @bufTemp2,addr lpszFilterFmt4,@dwCount1
-            invoke lstrcat,addr lpServicesBuffer,addr @bufTemp2
-
-            ;求最后一行的空格数（16－长度％16）*3
-            xor edx,edx
-            mov eax,totalSize
-            mov ecx,16
-            div ecx
-            mov eax,16
-            sub eax,edx
-            xor edx,edx
-            mov ecx,3
-            mul ecx
-            mov @dwBlanks,eax
-
-            ;invoke wsprintf,addr szBuffer,addr lpszOut1,totalSize
-            ;invoke MessageBox,NULL,addr szBuffer,NULL,MB_OK
-
-            .while TRUE
-                .if totalSize==0  ;最后一行
-                ;填充空格
-                    .while TRUE
-                        .break .if @dwBlanks==0
-                        invoke lstrcat,addr lpServicesBuffer,addr lpszBlank
-                        dec @dwBlanks
-                    .endw
-                    ;第二列与第三列中间的空格
-                    invoke lstrcat,addr lpServicesBuffer,addr lpszManyBlanks  
-                    ;第三列内容
-                    invoke lstrcat,addr lpServicesBuffer,addr bufDisplay
-                    ;回车换行符号
-                    invoke lstrcat,addr lpServicesBuffer,addr lpszReturn
-                    .break
-                .endif
-                ;将al翻译成可以显示的ascii码字符,注意不能破坏al的值
-                mov al,byte ptr [esi]
-                .if al>20h && al<7eh
-                    mov ah,al
-                .else        ;如果不是ASCII码值，则显示“.”
-                    mov ah,2Eh
-                .endif
-                ;写入第三列的值
-                mov byte ptr [edi],ah
-
-                ;win2k不支持al字节级别，经常导致程序无故结束，
-                ;因此用以下方法替代
-                ;invoke wsprintf,addr @bufTemp1,addr lpszFilterFmt3,al
-                         
-                mov bl,al
-                xor edx,edx
-                xor eax,eax
-                mov al,bl
-                mov cx,16
-                div cx   ;结果高位在al中，余数在dl中
-
-                ;组合字节的十六进制字符串到@bufTemp1中，类似于：“7F \0”
-                push edi
-                xor bx,bx
-                mov bl,al
-                movzx edi,bx
-                mov bl,byte ptr lpszHexArr[edi]
-                mov byte ptr @bufTemp1[0],bl
-
-                xor bx,bx
-                mov bl,dl
-                movzx edi,bx
-                mov bl,byte ptr lpszHexArr[edi]
-                mov byte ptr @bufTemp1[1],bl
-                mov bl,20h
-                mov byte ptr @bufTemp1[2],bl
-                mov bl,0
-                mov byte ptr @bufTemp1[3],bl
-                pop edi
-
-                ; 将第二列写入lpServicesBuffer
-                invoke lstrcat,addr lpServicesBuffer,addr @bufTemp1
-
-                .if @dwCount==16   ;已到16个字节，
-                    ;第二列与第三列中间的空格
-                    invoke lstrcat,addr lpServicesBuffer,addr lpszManyBlanks
-                    ;显示第三列字符 
-                    invoke lstrcat,addr lpServicesBuffer,addr bufDisplay        
-                    ;回车换行
-                    invoke lstrcat,addr lpServicesBuffer,addr lpszReturn 
-
-                    ;写入内容
-                    invoke _appendInfo,addr lpServicesBuffer
-                    invoke RtlZeroMemory,addr lpServicesBuffer,100           
-
-                    .break .if dwStop==1
-
-                    ;显示下一行的地址
-                    inc @dwCount1
+                    mov @dwCount,1
+                    mov esi,lpMemory
+                    mov edi,offset bufDisplay
+        
+                    ; 将第一列写入lpServicesBuffer
+                    mov @dwCount1,0
                     invoke wsprintf,addr @bufTemp2,addr lpszFilterFmt4,@dwCount1
                     invoke lstrcat,addr lpServicesBuffer,addr @bufTemp2
-                    dec @dwCount1
 
-                    mov @dwCount,0
-                    invoke RtlZeroMemory,addr bufDisplay,50
-                    mov edi,offset bufDisplay
-                    ;为了能和后面的inc edi配合使edi正确定位到bufDisplay处
-                    dec edi 
-                .endif
+                    ;求最后一行的空格数（16－长度％16）*3
+                    xor edx,edx
+                    mov eax,totalSize
+                    mov ecx,16
+                    div ecx
+                    mov eax,16
+                    sub eax,edx
+                    xor edx,edx
+                    mov ecx,3
+                    mul ecx
+                    mov @dwBlanks,eax
 
-                dec totalSize
-                inc @dwCount
-                inc esi
-                inc edi
-                inc @dwCount1
-            .endw
+                    ;invoke wsprintf,addr szBuffer,addr lpszOut1,totalSize
+                    ;invoke MessageBox,NULL,addr szBuffer,NULL,MB_OK
 
-            ;添加最后一行
-            invoke _appendInfo,addr lpServicesBuffer
+                    .while TRUE
+                        .if totalSize==0  ;最后一行
+                        ;填充空格
+                            .while TRUE
+                                .break .if @dwBlanks==0
+                                invoke lstrcat,addr lpServicesBuffer,addr lpszBlank
+                                dec @dwBlanks
+                            .endw
+                            ;第二列与第三列中间的空格
+                            invoke lstrcat,addr lpServicesBuffer,addr lpszManyBlanks  
+                            ;第三列内容
+                            invoke lstrcat,addr lpServicesBuffer,addr bufDisplay
+                            ;回车换行符号
+                            invoke lstrcat,addr lpServicesBuffer,addr lpszReturn
+                            .break
+                        .endif
+                        ;将al翻译成可以显示的ascii码字符,注意不能破坏al的值
+                        mov al,byte ptr [esi]
+                        .if al>20h && al<7eh
+                            mov ah,al
+                        .else        ;如果不是ASCII码值，则显示“.”
+                            mov ah,2Eh
+                        .endif
+                        ;写入第三列的值
+                        mov byte ptr [edi],ah
 
-          
-            ;处理文件结束
+                        ;win2k不支持al字节级别，经常导致程序无故结束，
+                        ;因此用以下方法替代
+                        ;invoke wsprintf,addr @bufTemp1,addr lpszFilterFmt3,al
+                                
+                        mov bl,al
+                        xor edx,edx
+                        xor eax,eax
+                        mov al,bl
+                        mov cx,16
+                        div cx   ;结果高位在al中，余数在dl中
 
-            jmp _ErrorExit
+                        ;组合字节的十六进制字符串到@bufTemp1中，类似于：“7F \0”
+                        push edi
+                        xor bx,bx
+                        mov bl,al
+                        movzx edi,bx
+                        mov bl,byte ptr lpszHexArr[edi]
+                        mov byte ptr @bufTemp1[0],bl
+
+                        xor bx,bx
+                        mov bl,dl
+                        movzx edi,bx
+                        mov bl,byte ptr lpszHexArr[edi]
+                        mov byte ptr @bufTemp1[1],bl
+                        mov bl,20h
+                        mov byte ptr @bufTemp1[2],bl
+                        mov bl,0
+                        mov byte ptr @bufTemp1[3],bl
+                        pop edi
+
+                        ; 将第二列写入lpServicesBuffer
+                        invoke lstrcat,addr lpServicesBuffer,addr @bufTemp1
+
+                        .if @dwCount==16   ;已到16个字节，
+                            ;第二列与第三列中间的空格
+                            invoke lstrcat,addr lpServicesBuffer,addr lpszManyBlanks
+                            ;显示第三列字符 
+                            invoke lstrcat,addr lpServicesBuffer,addr bufDisplay        
+                            ;回车换行
+                            invoke lstrcat,addr lpServicesBuffer,addr lpszReturn 
+
+                            ;写入内容
+                            invoke _appendInfo,addr lpServicesBuffer
+                            invoke RtlZeroMemory,addr lpServicesBuffer,100           
+
+                            .break .if dwStop==1
+
+                            ;显示下一行的地址
+                            inc @dwCount1
+                            invoke wsprintf,addr @bufTemp2,addr lpszFilterFmt4,@dwCount1
+                            invoke lstrcat,addr lpServicesBuffer,addr @bufTemp2
+                            dec @dwCount1
+
+                            mov @dwCount,0
+                            invoke RtlZeroMemory,addr bufDisplay,50
+                            mov edi,offset bufDisplay
+                            ;为了能和后面的inc edi配合使edi正确定位到bufDisplay处
+                            dec edi 
+                        .endif
+
+                        dec totalSize
+                        inc @dwCount
+                        inc esi
+                        inc edi
+                        inc @dwCount1
+                    .endw
+
+                    ;添加最后一行
+                    invoke _appendInfo,addr lpServicesBuffer
+
+                
+                    ;处理文件结束
+
+                    jmp _ErrorExit
  
 _ErrFormat:
             invoke MessageBox,hWinMain,offset szErrFormat,NULL,MB_OK
 _ErrorExit:
-                pop fs:[0]
-                add esp,0ch
-                invoke UnmapViewOfFile,lpMemory
+                    pop fs:[0]
+                    add esp,0ch
+                    invoke UnmapViewOfFile,lpMemory
                 .endif
-            invoke CloseHandle,@hMapFile
+                invoke CloseHandle,@hMapFile
             .endif
-        invoke CloseHandle,@hFile
+            invoke CloseHandle,@hFile
         .endif
     .endif
 @@:        
